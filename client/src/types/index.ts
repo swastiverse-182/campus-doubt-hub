@@ -1,0 +1,114 @@
+export type UserRole = 'USER' | 'ADMIN';
+export type BadgeLevel = 'Beginner' | 'Helper' | 'Expert' | 'Mentor';
+export type AnswerStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type QuestionTag =
+  | 'Onboarding & VINS'
+  | 'Timelines & Clashes'
+  | 'NOC Compliance'
+  | 'Dashboard & Offers'
+  | 'Certification & Credits'
+  | 'ViBe LMS Tech'
+  | 'Yaksha AI Engine'
+  | 'Communication Tech'
+  | 'Rosetta Journaling'
+  | 'Team & Code Engineering';
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  spPoints: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Question {
+  _id: string;
+  title: string;
+  description: string;
+  tags: QuestionTag[];
+  author: User;
+  viewsCount: number;
+  answersCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Answer {
+  _id: string;
+  questionId: string | Question;
+  authorId: User;
+  content: string;
+  status: AnswerStatus;
+  isBestAnswer: boolean;
+  rewarded: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Bookmark {
+  _id: string;
+  userId: string;
+  questionId: Question;
+  createdAt: string;
+}
+
+export interface Notification {
+  _id: string;
+  userId: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+  error?: string;
+  pagination?: Pagination;
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface Analytics {
+  totalUsers: number;
+  totalQuestions: number;
+  totalAnswers: number;
+  pendingAnswers: number;
+  approvedAnswers: number;
+  rejectedAnswers: number;
+}
+
+export interface UserStats {
+  questionsAsked: number;
+  answersSubmitted: number;
+  approvedAnswers: number;
+  bestAnswers: number;
+}
+
+export const QUESTION_TAGS: QuestionTag[] = [
+  'Onboarding & VINS',
+  'Timelines & Clashes',
+  'NOC Compliance',
+  'Dashboard & Offers',
+  'Certification & Credits',
+  'ViBe LMS Tech',
+  'Yaksha AI Engine',
+  'Communication Tech',
+  'Rosetta Journaling',
+  'Team & Code Engineering'
+];
+
+export const getBadge = (sp: number): BadgeLevel => {
+  if (sp > 500) return 'Mentor';
+  if (sp > 200) return 'Expert';
+  if (sp > 50) return 'Helper';
+  return 'Beginner';
+};

@@ -1,0 +1,36 @@
+import mongoose, { Document, Schema } from 'mongoose';
+
+export type AnswerStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface IAnswer extends Document {
+  questionId: mongoose.Types.ObjectId;
+  authorId: mongoose.Types.ObjectId;
+  content: string;
+  status: AnswerStatus;
+  isBestAnswer: boolean;
+  rewarded: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const AnswerSchema = new Schema<IAnswer>(
+  {
+    questionId: { type: Schema.Types.ObjectId, ref: 'Question', required: true },
+    authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    content: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING',
+    },
+    isBestAnswer: { type: Boolean, default: false },
+    rewarded: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+AnswerSchema.index({ questionId: 1 });
+AnswerSchema.index({ authorId: 1 });
+AnswerSchema.index({ status: 1 });
+
+export const Answer = mongoose.model<IAnswer>('Answer', AnswerSchema);
