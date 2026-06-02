@@ -12,6 +12,8 @@ export interface IAnswer extends Document {
   upvotes: number;
   downvotes: number;
   isAccepted: boolean;
+  reportCount: number;
+  isFlagged: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +33,8 @@ const AnswerSchema = new Schema<IAnswer>(
     upvotes: { type: Number, default: 0 },
     downvotes: { type: Number, default: 0 },
     isAccepted: { type: Boolean, default: false },
+    reportCount: { type: Number, default: 0 },
+    isFlagged: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

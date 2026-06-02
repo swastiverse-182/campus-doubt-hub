@@ -52,6 +52,45 @@ export interface Answer {
   upvotes: number;
   downvotes: number;
   isAccepted: boolean;
+  reportCount: number;
+  isFlagged: boolean;
+}
+
+export type ReportStatus = 'PENDING' | 'REVIEWED' | 'DISMISSED';
+export type ReportReason =
+  | 'Spam'
+  | 'Irrelevant'
+  | 'Incorrect Information'
+  | 'Offensive Content'
+  | 'Duplicate Answer'
+  | 'Other';
+
+export interface Report {
+  _id: string;
+  answerId: {
+    _id: string;
+    content: string;
+    authorId: {
+      _id: string;
+      name: string;
+      email: string;
+      spPoints: number;
+    };
+    questionId: {
+      _id: string;
+      title: string;
+    };
+  };
+  reporterId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  reason: ReportReason;
+  comment?: string;
+  status: ReportStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Vote {

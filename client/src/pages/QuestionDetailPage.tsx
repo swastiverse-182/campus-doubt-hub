@@ -105,6 +105,24 @@ const QuestionDetailPage: React.FC = () => {
     }
   };
 
+  const handleAcceptAnswer = async (answerId: string) => {
+    if (!id) return;
+    try {
+      const res = await questionsApi.acceptAnswer(id, answerId);
+      setQuestion(res.data.data || null);
+      setAnswers((prev) =>
+        prev.map((a) => ({
+          ...a,
+          isAccepted: a._id === answerId,
+        }))
+      );
+      toast.success('Answer accepted!');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to accept answer';
+      toast.error(msg);
+    }
+  };
+
   const handleDeleteQuestion = async () => {
     if (!confirm('Delete this question?')) return;
     try {
@@ -227,6 +245,8 @@ const QuestionDetailPage: React.FC = () => {
               onUpdate={(id, content) =>
                 setAnswers((prev) => prev.map((a) => a._id === id ? { ...a, content } : a))
               }
+              onAccept={handleAcceptAnswer}
+              questionAuthorId={question.author?._id}
             />
           ))}
         </div>

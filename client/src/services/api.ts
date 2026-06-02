@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type {
   ApiResponse, User, Question, Answer, Bookmark,
-  Notification, Analytics, UserStats, Vote, ActivityItem
+  Notification, Analytics, UserStats, Vote, ActivityItem, Report
 } from '../types';
 
 const api = axios.create({
@@ -138,6 +138,24 @@ export const searchApi = {
 export const feedApi = {
   getGlobal: (page?: number) => api.get<ApiResponse<ActivityItem[]>>('/feed/global', { params: { page } }),
   getUser: (page?: number) => api.get<ApiResponse<ActivityItem[]>>('/feed/user', { params: { page } }),
+};
+
+// ─── REPORTS ──────────────────────────────────────────────────────────────────
+export const reportsApi = {
+  create: (data: { answerId: string; reason: string; comment?: string }) =>
+    api.post<ApiResponse<Report>>('/reports', data),
+
+  getReports: (status?: string) =>
+    api.get<ApiResponse<Report[]>>('/admin/reports', { params: { status } }),
+
+  review: (id: string, rejectAnswer: boolean) =>
+    api.patch<ApiResponse<Report>>(`/admin/reports/${id}/review`, { rejectAnswer }),
+
+  dismiss: (id: string, clearFlag: boolean) =>
+    api.patch<ApiResponse<Report>>(`/admin/reports/${id}/dismiss`, { clearFlag }),
+
+  delete: (id: string) =>
+    api.delete<ApiResponse<null>>(`/admin/reports/${id}`),
 };
 
 export default api;

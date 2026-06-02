@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin.routes';
 import voteRoutes from './routes/vote.routes';
 import searchRoutes from './routes/search.routes';
 import feedRoutes from './routes/feed.routes';
+import { reportUserRoutes, reportAdminRoutes } from './routes/report.routes';
 
 import { errorHandler, notFound } from './middleware/error.middleware';
 
@@ -39,6 +40,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/votes', voteRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/feed', feedRoutes);
+app.use('/api/reports', reportUserRoutes);
+app.use('/api/admin/reports', reportAdminRoutes);
 
 // Error handling
 app.use(notFound);
