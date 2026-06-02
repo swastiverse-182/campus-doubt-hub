@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import { adminApi } from '../services/api';
 import type { Answer, Analytics, Question } from '../types';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Star, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -92,6 +93,9 @@ const AdminDashboardPage: React.FC = () => {
     { label: 'Total Users', value: analytics.totalUsers, color: 'var(--info)', icon: '👥' },
     { label: 'Total Questions', value: analytics.totalQuestions, color: 'var(--accent-light)', icon: '❓' },
     { label: 'Total Answers', value: analytics.totalAnswers, color: 'var(--text-primary)', icon: '💬' },
+    { label: 'Active Users (7d)', value: analytics.activeUsers ?? 0, color: '#f59e0b', icon: '🔥' },
+    { label: 'Acceptance Rate', value: `${analytics.acceptanceRate ?? 0}%`, color: '#22c55e', icon: '✅' },
+    { label: 'Avg Answers / Q', value: analytics.avgAnswersPerQ ?? 0, color: '#ec4899', icon: '📊' },
     { label: 'Pending', value: analytics.pendingAnswers, color: 'var(--warning)', icon: '⏳' },
     { label: 'Approved', value: analytics.approvedAnswers, color: 'var(--success)', icon: '✅' },
     { label: 'Rejected', value: analytics.rejectedAnswers, color: 'var(--danger)', icon: '❌' },
@@ -113,6 +117,52 @@ const AdminDashboardPage: React.FC = () => {
               <div className="stat-label">{label}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Extended Analytics Lists */}
+      {analytics && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+          {/* Top Contributors */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 700 }}>🏆 Top Contributors</h3>
+            {(!analytics.topContributors || analytics.topContributors.length === 0) ? (
+              <p className="text-muted text-sm">No contributors found.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {analytics.topContributors.map((contrib, idx) => (
+                  <div key={contrib._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                    <span>
+                      <strong style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }}>#{idx + 1}</strong>
+                      {contrib.name}
+                    </span>
+                    <span style={{ fontWeight: 700, color: 'var(--accent-light)' }}>{contrib.spPoints} SP</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Trending Questions */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 700 }}>🔥 Trending Questions</h3>
+            {(!analytics.trendingQuestions || analytics.trendingQuestions.length === 0) ? (
+              <p className="text-muted text-sm">No trending questions.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {analytics.trendingQuestions.map((q) => (
+                  <div key={q._id} style={{ fontSize: '0.9rem' }}>
+                    <Link to={`/questions/${q._id}`} style={{ color: 'var(--accent-light)', fontWeight: 600, display: 'block', textDecoration: 'none' }}>
+                      {q.title}
+                    </Link>
+                    <div className="text-muted text-xs" style={{ marginTop: '0.15rem' }}>
+                      Score: {Math.round(q.trendingScore || 0)} | {q.answersCount} answers | {q.viewsCount} views
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

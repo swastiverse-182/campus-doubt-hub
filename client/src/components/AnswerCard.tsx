@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
-import { Star, Clock, Edit2, Trash2 } from 'lucide-react';
+import { Star, Clock, Edit2, Trash2, CheckCircle } from 'lucide-react';
 import type { Answer } from '../types';
 import { useAuth } from '../context/AuthContext';
 import Badge from './Badge';
 import { answersApi } from '../services/api';
 import toast from 'react-hot-toast';
+import VoteButtons from './VoteButtons';
 
 interface AnswerCardProps {
   answer: Answer;
   onDelete?: (id: string) => void;
   onUpdate?: (id: string, content: string) => void;
+  userVote?: 1 | -1 | null;
+  onVoteChange?: (upvotes: number, downvotes: number, newUserVote: 1 | -1 | null) => void;
 }
 
-const AnswerCard: React.FC<AnswerCardProps> = ({ answer, onDelete, onUpdate }) => {
+const AnswerCard: React.FC<AnswerCardProps> = ({ answer, onDelete, onUpdate, userVote, onVoteChange }) => {
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(answer.content);
@@ -56,7 +59,21 @@ const AnswerCard: React.FC<AnswerCardProps> = ({ answer, onDelete, onUpdate }) =
   };
 
   return (
-    <div className={`answer-card fade-in${answer.isBestAnswer ? ' best-answer' : ''}`} id={`answer-${answer._id}`}>
+    <div className="answer-card-wrapper">
+      <VoteButtons
+        targetId={answer._id}
+        targetType="answer"
+        upvotes={answer.upvotes ?? 0}
+        downvotes={answer.downvotes ?? 0}
+        userVote={userVote ?? null}
+        onVoteChange={onVoteChange ?? (() => {})}
+      />
+      <div className={`answer-card fade-in${answer.isBestAnswer ? ' best-answer' : ''}${answer.isAccepted ? ' accepted-answer' : ''}`} id={`answer-${answer._id}`}>
+      {answer.isAccepted && (
+        <div className="accepted-answer-banner">
+          <CheckCircle size={16} fill="currentColor" /> Accepted Answer
+        </div>
+      )}
       {answer.isBestAnswer && (
         <div className="best-answer-banner">
           <Star size={16} fill="currentColor" /> Best Answer
@@ -117,6 +134,7 @@ const AnswerCard: React.FC<AnswerCardProps> = ({ answer, onDelete, onUpdate }) =
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

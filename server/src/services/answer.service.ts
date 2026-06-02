@@ -1,7 +1,9 @@
 import { Answer } from '../models/Answer';
 import { Question } from '../models/Question';
-import { User } from '../models/User';
 import { createNotification } from './notification.service';
+import { awardSP, SP_RULES } from './sp.service';
+import { updateTrendingScore } from './trending.service';
+import { logActivity } from './feed.service';
 import { CreateAnswerInput, UpdateAnswerInput } from '../validators/answer.validator';
 
 export const createAnswer = async (input: CreateAnswerInput, authorId: string) => {
@@ -16,6 +18,19 @@ export const createAnswer = async (input: CreateAnswerInput, authorId: string) =
 
   // Update answer count on question
   await Question.findByIdAndUpdate(input.questionId, { $inc: { answersCount: 1 } });
+  await updateTrendingScore(input.questionId);
+
+  // Log activity
+  await logActivity(
+    authorId,
+    'answered',
+    'answer',
+    answer._id.toString(),
+    {
+      questionId: question._id.toString(),
+      questionTitle: question.title
+    }
+  );
 
   return answer.populate('authorId', 'name email spPoints');
 };
@@ -43,11 +58,12 @@ export const deleteAnswer = async (id: string, userId: string) => {
 
   await Answer.findByIdAndDelete(id);
   await Question.findByIdAndUpdate(answer.questionId, { $inc: { answersCount: -1 } });
+  await updateTrendingScore(answer.questionId.toString());
 };
 
 export const getAnswersByQuestion = async (questionId: string) => {
   return Answer.find({ questionId })
-    .sort({ isBestAnswer: -1, createdAt: 1 })
+    .sort({ isAccepted: -1, isBestAnswer: -1, upvotes: -1, createdAt: 1 })
     .populate('authorId', 'name email spPoints');
 };
 
@@ -59,25 +75,22 @@ export const approveAnswer = async (answerId: string) => {
 
   // Award SP only once
   if (!answer.rewarded) {
+    const newTotal = await awardSP(
+      answer.authorId.toString(),
+      SP_RULES.ANSWER_APPROVED,
+      'answer_approved',
+      answer._id.toString()
+    );
     answer.rewarded = true;
-    await User.findByIdAndUpdate(answer.authorId, { $inc: { spPoints: 10 } });
-
-    // Get updated user for notification context
-    const author = await User.findById(answer.authorId);
-    if (author) {
-      await createNotification(
-        answer.authorId,
-        `🎉 Your answer was approved! You earned +10 SP. Total: ${(author.spPoints || 0) + 10} SP`
-      );
-    }
+    await answer.save();
+    await createNotification(
+      answer.authorId,
+      `🎉 Your answer was approved! You earned +${SP_RULES.ANSWER_APPROVED} SP. Total: ${newTotal} SP`
+    );
   } else {
-    const author = await User.findById(answer.authorId);
-    if (author) {
-      await createNotification(answer.authorId, '✅ Your answer was approved!');
-    }
+    await createNotification(answer.authorId, '✅ Your answer was approved!');
+    await answer.save();
   }
-
-  await answer.save();
   return answer.populate('authorId', 'name email spPoints');
 };
 
@@ -113,6 +126,14 @@ export const markBestAnswer = async (answerId: string) => {
   await createNotification(
     answer.authorId,
     '⭐ Your answer was selected as the Best Answer!'
+  );
+
+  // Award SP for best answer
+  await awardSP(
+    answer.authorId.toString(),
+    SP_RULES.BEST_ANSWER,
+    'best_answer',
+    answer._id.toString()
   );
 
   return answer.populate('authorId', 'name email spPoints');

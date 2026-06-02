@@ -9,6 +9,9 @@ export interface IAnswer extends Document {
   status: AnswerStatus;
   isBestAnswer: boolean;
   rewarded: boolean;
+  upvotes: number;
+  downvotes: number;
+  isAccepted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +28,9 @@ const AnswerSchema = new Schema<IAnswer>(
     },
     isBestAnswer: { type: Boolean, default: false },
     rewarded: { type: Boolean, default: false },
+    upvotes: { type: Number, default: 0 },
+    downvotes: { type: Number, default: 0 },
+    isAccepted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

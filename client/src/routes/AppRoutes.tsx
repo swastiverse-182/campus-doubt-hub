@@ -12,6 +12,7 @@ import LeaderboardPage from '../pages/LeaderboardPage';
 import NotificationsPage from '../pages/NotificationsPage';
 import BookmarksPage from '../pages/BookmarksPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import ActivityFeedPage from '../pages/ActivityFeedPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const AppRoutes: React.FC = () => {
@@ -35,6 +36,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<DashboardPage />} />
       <Route path="/questions/:id" element={<QuestionDetailPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/activity" element={<ActivityFeedPage />} />
 
       {/* Protected */}
       <Route path="/ask" element={<ProtectedRoute><AskQuestionPage /></ProtectedRoute>} />

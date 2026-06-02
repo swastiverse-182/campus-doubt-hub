@@ -4,11 +4,12 @@ import { sendSuccess, sendError } from '../utils/apiResponse';
 
 export const getQuestions = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, tag, answered, page, limit } = req.query;
+    const { search, tag, answered, sort, page, limit } = req.query;
     const result = await questionService.getQuestions({
       search: search as string,
       tag: tag as string,
       answered: answered as string,
+      sort: sort as any,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 10,
     });
@@ -59,5 +60,18 @@ export const deleteQuestion = async (req: Request, res: Response): Promise<void>
     sendSuccess(res, null, 'Question deleted');
   } catch (err) {
     sendError(res, (err as Error).message, 400);
+  }
+};
+
+export const acceptAnswer = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const question = await questionService.acceptAnswer(
+      req.params.id,
+      req.body.answerId,
+      req.user!._id.toString()
+    );
+    sendSuccess(res, question, 'Answer accepted');
+  } catch (err: any) {
+    sendError(res, err.message || 'Failed to accept answer', 400);
   }
 };

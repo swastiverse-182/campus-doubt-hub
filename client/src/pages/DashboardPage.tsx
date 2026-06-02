@@ -6,7 +6,7 @@ import TagChip from '../components/TagChip';
 import Pagination from '../components/Pagination';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
-import { questionsApi } from '../services/api';
+import { questionsApi, searchApi } from '../services/api';
 import type { Question } from '../types';
 import { QUESTION_TAGS } from '../types';
 import { Link } from 'react-router-dom';
@@ -20,13 +20,34 @@ const DashboardPage: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeTag, setActiveTag] = useState<string>('');
   const [answered, setAnswered] = useState<string>('');
+  const [sort, setSort] = useState<'recent' | 'trending' | 'upvotes' | 'answers'>('recent');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(t);
+  }, [search]);
+
+  // Fetch search suggestions
+  useEffect(() => {
+    if (!search.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const fetchSuggestions = async () => {
+      try {
+        const res = await searchApi.suggestions(search);
+        setSuggestions(res.data.data || []);
+      } catch {
+        setSuggestions([]);
+      }
+    };
+    fetchSuggestions();
   }, [search]);
 
   const fetchQuestions = useCallback(async () => {
@@ -36,6 +57,7 @@ const DashboardPage: React.FC = () => {
         search: debouncedSearch || undefined,
         tag: activeTag || undefined,
         answered: answered || undefined,
+        sort,
         page,
         limit: 10,
       });
@@ -46,11 +68,11 @@ const DashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, activeTag, answered, page]);
+  }, [debouncedSearch, activeTag, answered, sort, page]);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, activeTag, answered]);
+  }, [debouncedSearch, activeTag, answered, sort]);
 
   useEffect(() => {
     fetchQuestions();
@@ -68,14 +90,34 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Search bar */}
-      <div className="search-bar" style={{ marginBottom: '1.25rem' }}>
-        <Search size={17} color="var(--text-muted)" />
-        <input
-          id="question-search"
-          placeholder="Search questions…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="search-bar-container" style={{ position: 'relative', marginBottom: '1.25rem' }}>
+        <div className="search-bar" style={{ marginBottom: 0 }}>
+          <Search size={17} color="var(--text-muted)" />
+          <input
+            id="question-search"
+            placeholder="Search questions…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          />
+        </div>
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="search-suggestions">
+            {suggestions.map((sug, idx) => (
+              <div
+                key={idx}
+                className="search-suggestion-item"
+                onClick={() => {
+                  setSearch(sug);
+                  setShowSuggestions(false);
+                }}
+              >
+                {sug}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tag filters */}
@@ -92,6 +134,22 @@ const DashboardPage: React.FC = () => {
             active={activeTag === t}
             onClick={() => setActiveTag(activeTag === t ? '' : t)}
           />
+        ))}
+      </div>
+
+      {/* Sort tabs */}
+      <div className="sort-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        {(['recent', 'trending', 'upvotes', 'answers'] as const).map((tab) => (
+          <button
+            key={tab}
+            className={`sort-tab-btn${sort === tab ? ' active' : ''}`}
+            onClick={() => setSort(tab)}
+          >
+            {tab === 'recent' && 'Recent'}
+            {tab === 'trending' && '🔥 Trending'}
+            {tab === 'upvotes' && '👍 Most Upvoted'}
+            {tab === 'answers' && '💬 Most Answered'}
+          </button>
         ))}
       </div>
 

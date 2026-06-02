@@ -19,6 +19,10 @@ export interface IQuestion extends Document {
   author: mongoose.Types.ObjectId;
   viewsCount: number;
   answersCount: number;
+  upvotes: number;
+  downvotes: number;
+  acceptedAnswerId: mongoose.Types.ObjectId | null;
+  trendingScore: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +50,10 @@ const QuestionSchema = new Schema<IQuestion>(
     author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     viewsCount: { type: Number, default: 0 },
     answersCount: { type: Number, default: 0 },
+    upvotes: { type: Number, default: 0 },
+    downvotes: { type: Number, default: 0 },
+    acceptedAnswerId: { type: Schema.Types.ObjectId, ref: 'Answer', default: null },
+    trendingScore: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

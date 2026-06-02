@@ -9,6 +9,9 @@ import bookmarkRoutes from './routes/bookmark.routes';
 import notificationRoutes from './routes/notification.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/admin.routes';
+import voteRoutes from './routes/vote.routes';
+import searchRoutes from './routes/search.routes';
+import feedRoutes from './routes/feed.routes';
 
 import { errorHandler, notFound } from './middleware/error.middleware';
 
@@ -33,6 +36,9 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/votes', voteRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/feed', feedRoutes);
 
 // Error handling
 app.use(notFound);

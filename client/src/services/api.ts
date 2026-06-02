@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type {
   ApiResponse, User, Question, Answer, Bookmark,
-  Notification, Analytics, UserStats
+  Notification, Analytics, UserStats, Vote, ActivityItem
 } from '../types';
 
 const api = axios.create({
@@ -35,6 +35,7 @@ export const questionsApi = {
     search?: string;
     tag?: string;
     answered?: string;
+    sort?: 'recent' | 'trending' | 'upvotes' | 'answers';
     page?: number;
     limit?: number;
   }) => api.get<ApiResponse<Question[]>>('/questions', { params }),
@@ -48,6 +49,9 @@ export const questionsApi = {
     api.put<ApiResponse<Question>>(`/questions/${id}`, data),
 
   delete: (id: string) => api.delete<ApiResponse<null>>(`/questions/${id}`),
+
+  acceptAnswer: (questionId: string, answerId: string) =>
+    api.patch<ApiResponse<Question>>(`/questions/${questionId}/accept-answer`, { answerId }),
 };
 
 // ─── ANSWERS ─────────────────────────────────────────────────────────────────
@@ -111,6 +115,29 @@ export const adminApi = {
     api.patch<ApiResponse<Answer>>(`/admin/answers/${id}/best-answer`),
 
   getAnalytics: () => api.get<ApiResponse<Analytics>>('/admin/analytics'),
+};
+
+// ─── VOTES ────────────────────────────────────────────────────────────────────
+export const votesApi = {
+  cast: (data: { targetId: string; targetType: 'question' | 'answer'; value: 1 | -1 }) =>
+    api.post<ApiResponse<{ vote: Vote | null; action: string; upvotes: number; downvotes: number }>>('/votes', data),
+
+  remove: (targetId: string) =>
+    api.delete<ApiResponse<null>>(`/votes/${targetId}`),
+
+  getUserVotes: (targetIds: string[]) =>
+    api.get<ApiResponse<Vote[]>>('/votes/user', { params: { targetIds: targetIds.join(',') } }),
+};
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+export const searchApi = {
+  suggestions: (q: string) => api.get<ApiResponse<string[]>>('/search/suggestions', { params: { q } }),
+};
+
+// ─── FEED ─────────────────────────────────────────────────────────────────────
+export const feedApi = {
+  getGlobal: (page?: number) => api.get<ApiResponse<ActivityItem[]>>('/feed/global', { params: { page } }),
+  getUser: (page?: number) => api.get<ApiResponse<ActivityItem[]>>('/feed/user', { params: { page } }),
 };
 
 export default api;

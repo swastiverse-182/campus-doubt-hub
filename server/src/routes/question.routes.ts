@@ -11,5 +11,6 @@ router.get('/:id', questionController.getQuestion);
 router.post('/', authenticate, validate(createQuestionSchema), questionController.createQuestion);
 router.put('/:id', authenticate, validate(updateQuestionSchema), questionController.updateQuestion);
 router.delete('/:id', authenticate, questionController.deleteQuestion);
+router.patch('/:id/accept-answer', authenticate, questionController.acceptAnswer);
 
 export default router;

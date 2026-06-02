@@ -33,6 +33,10 @@ export interface Question {
   answersCount: number;
   createdAt: string;
   updatedAt: string;
+  upvotes: number;
+  downvotes: number;
+  acceptedAnswerId?: string | null;
+  trendingScore?: number;
 }
 
 export interface Answer {
@@ -45,6 +49,18 @@ export interface Answer {
   rewarded: boolean;
   createdAt: string;
   updatedAt: string;
+  upvotes: number;
+  downvotes: number;
+  isAccepted: boolean;
+}
+
+export interface Vote {
+  _id: string;
+  userId: string;
+  targetId: string;
+  targetType: 'question' | 'answer';
+  value: 1 | -1;
+  createdAt: string;
 }
 
 export interface Bookmark {
@@ -84,6 +100,11 @@ export interface Analytics {
   pendingAnswers: number;
   approvedAnswers: number;
   rejectedAnswers: number;
+  activeUsers: number;
+  trendingQuestions: Question[];
+  acceptanceRate: number;
+  avgAnswersPerQ: number;
+  topContributors: Array<{ _id: string; name: string; spPoints: number }>;
 }
 
 export interface UserStats {
@@ -91,6 +112,30 @@ export interface UserStats {
   answersSubmitted: number;
   approvedAnswers: number;
   bestAnswers: number;
+  badgeProgress: number;
+}
+
+export interface ReputationEntry {
+  _id: string;
+  userId: string;
+  amount: number;
+  reason: string;
+  sourceId?: string;
+  createdAt: string;
+}
+
+export interface ActivityItem {
+  _id: string;
+  userId: User;
+  action: 'asked' | 'answered' | 'upvoted' | 'downvoted' | 'accepted';
+  targetType: 'question' | 'answer';
+  targetId: string;
+  metadata: {
+    questionId?: string;
+    questionTitle?: string;
+    answerAuthorId?: string;
+  };
+  createdAt: string;
 }
 
 export const QUESTION_TAGS: QuestionTag[] = [

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Bookmark, Trophy, Bell, User,
-  Shield, LogOut, PlusCircle, ArrowLeft
+  Shield, LogOut, PlusCircle, ArrowLeft, Activity
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -80,6 +80,9 @@ const Sidebar: React.FC = () => {
         </Link>
         <Link to="/leaderboard" className={`sidebar-link${active('/leaderboard')}`} id="sidebar-leaderboard">
           <Trophy size={17} /> Leaderboard
+        </Link>
+        <Link to="/activity" className={`sidebar-link${active('/activity')}`} id="sidebar-activity">
+          <Activity size={17} /> Activity Feed
         </Link>
         {user && (
           <Link to="/notifications" className={`sidebar-link${active('/notifications')}`} id="sidebar-notifications">

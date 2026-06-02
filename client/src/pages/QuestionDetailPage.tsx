@@ -7,10 +7,11 @@ import TagChip from '../components/TagChip';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import Badge from '../components/Badge';
-import { questionsApi, answersApi, bookmarksApi } from '../services/api';
-import type { Question, Answer, Bookmark as BookmarkType } from '../types';
+import { questionsApi, answersApi, bookmarksApi, votesApi } from '../services/api';
+import type { Question, Answer, Bookmark as BookmarkType, Vote } from '../types';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import VoteButtons from '../components/VoteButtons';
 
 const QuestionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ const QuestionDetailPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [userVotes, setUserVotes] = useState<Record<string, 1 | -1>>({});
 
   const isBookmarked = bookmarks.some((b) => b.questionId?._id === id || String(b.questionId) === id);
 
@@ -39,6 +41,19 @@ const QuestionDetailPage: React.FC = () => {
       if (user) {
         const bRes = await bookmarksApi.getAll();
         setBookmarks(bRes.data.data || []);
+        // Fetch user votes for question and answers
+        const answerIds = (aRes.data.data || []).map((a: Answer) => a._id);
+        const targetIds = [id, ...answerIds];
+        try {
+          const vRes = await votesApi.getUserVotes(targetIds);
+          const votesMap: Record<string, 1 | -1> = {};
+          (vRes.data.data || []).forEach((v: Vote) => {
+            votesMap[v.targetId] = v.value;
+          });
+          setUserVotes(votesMap);
+        } catch {
+          // Votes fetch failed silently
+        }
       }
     } catch {
       toast.error('Failed to load question');
@@ -117,6 +132,24 @@ const QuestionDetailPage: React.FC = () => {
     <Layout>
       {/* Question */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div className="question-detail-wrapper">
+          <VoteButtons
+            targetId={question._id}
+            targetType="question"
+            upvotes={question.upvotes ?? 0}
+            downvotes={question.downvotes ?? 0}
+            userVote={userVotes[question._id] ?? null}
+            onVoteChange={(up, down, newVote) => {
+              setQuestion((prev) => prev ? { ...prev, upvotes: up, downvotes: down } : prev);
+              setUserVotes((prev) => {
+                const next = { ...prev };
+                if (newVote) next[question._id] = newVote;
+                else delete next[question._id];
+                return next;
+              });
+            }}
+          />
+          <div className="question-detail-content">
         <div className="tag-list" style={{ marginBottom: '0.75rem' }}>
           {question.tags.map((t) => <TagChip key={t} tag={t} />)}
         </div>
@@ -160,6 +193,8 @@ const QuestionDetailPage: React.FC = () => {
             {' '}<Badge spPoints={question.author?.spPoints || 0} />
           </span>
         </div>
+          </div>
+        </div>
       </div>
 
       {/* Answers */}
@@ -175,6 +210,16 @@ const QuestionDetailPage: React.FC = () => {
             <AnswerCard
               key={a._id}
               answer={a}
+              userVote={userVotes[a._id] ?? null}
+              onVoteChange={(up, down, newVote) => {
+                setAnswers((prev) => prev.map((ans) => ans._id === a._id ? { ...ans, upvotes: up, downvotes: down } : ans));
+                setUserVotes((prev) => {
+                  const next = { ...prev };
+                  if (newVote) next[a._id] = newVote;
+                  else delete next[a._id];
+                  return next;
+                });
+              }}
               onDelete={(id) => {
                 setAnswers((prev) => prev.filter((a) => a._id !== id));
                 setQuestion((prev) => prev ? { ...prev, answersCount: prev.answersCount - 1 } : prev);

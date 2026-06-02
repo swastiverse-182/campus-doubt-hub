@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import Badge from '../components/Badge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { usersApi } from '../services/api';
-import type { User, UserStats, Question, Answer } from '../types';
+import type { User, UserStats, Question, Answer, ReputationEntry } from '../types';
 
 
 const ProfilePage: React.FC = () => {
@@ -12,8 +12,10 @@ const ProfilePage: React.FC = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Answer[]>([]);
+  const [reputationHistory, setReputationHistory] = useState<ReputationEntry[]>([]);
+  const [topAnswers, setTopAnswers] = useState<Answer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'questions' | 'answers'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'answers' | 'reputation'>('questions');
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -26,6 +28,10 @@ const ProfilePage: React.FC = () => {
         setStats(profileRes.data.data?.stats || null);
         setQuestions(activityRes.data.data?.questions || []);
         setAnswers(activityRes.data.data?.answers || []);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setReputationHistory((profileRes.data.data as any)?.reputationHistory || []);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setTopAnswers((profileRes.data.data as any)?.topAnswers || []);
       } finally {
         setLoading(false);
       }
@@ -47,7 +53,7 @@ const ProfilePage: React.FC = () => {
   return (
     <Layout>
       {/* Hero */}
-      <div className="profile-hero">
+      <div className="profile-hero" style={{ marginBottom: '1rem' }}>
         <div className="profile-avatar">{user.name[0]?.toUpperCase()}</div>
         <div className="profile-info">
           <h2>{user.name}</h2>
@@ -60,6 +66,19 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Badge Progression */}
+      {stats && stats.badgeProgress !== undefined && (
+        <div className="badge-progression-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Badge Progression</span>
+            <span style={{ fontWeight: 700, color: 'var(--accent-light)' }}>{stats.badgeProgress}% to next level</span>
+          </div>
+          <div className="badge-progress" style={{ height: '8px', background: 'var(--border)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+            <div style={{ width: `${stats.badgeProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%)', borderRadius: 'var(--radius-full)' }} />
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       {stats && (
@@ -94,6 +113,13 @@ const ProfilePage: React.FC = () => {
           id="tab-answers"
         >
           💬 My Answers ({answers.length})
+        </button>
+        <button
+          className={`filter-btn${activeTab === 'reputation' ? ' active' : ''}`}
+          onClick={() => setActiveTab('reputation')}
+          id="tab-reputation"
+        >
+          ⭐ Reputation ({reputationHistory.length})
         </button>
       </div>
 
@@ -138,6 +164,82 @@ const ProfilePage: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {activeTab === 'reputation' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Top Answers Showcase */}
+          <div>
+            <h3 style={{ marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: 700 }}>Top Contributions</h3>
+            {topAnswers.length === 0 ? (
+              <p className="text-muted">No answers with votes yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {topAnswers.map((a) => {
+                  const q = a.questionId as Question;
+                  return (
+                    <div key={a._id} className="answer-card" style={{ margin: 0 }}>
+                      {typeof q !== 'string' && q?.title && (
+                        <Link to={`/questions/${q._id}`} style={{ color: 'var(--accent-light)', fontWeight: 600, display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                          ↗ {q.title}
+                        </Link>
+                      )}
+                      <p className="text-secondary text-sm" style={{ marginBottom: '0.5rem' }}>
+                        {a.content.slice(0, 150)}{a.content.length > 150 && '…'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.8rem' }}>
+                          Score: {a.upvotes - a.downvotes} ({a.upvotes}▲ / {a.downvotes}▼)
+                        </span>
+                        {a.isBestAnswer && <span className="badge badge-mentor">⭐ Best</span>}
+                        {a.isAccepted && <span className="badge badge-expert" style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#22c55e' }}>✓ Accepted</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Reputation Log */}
+          <div>
+            <h3 style={{ marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: 700 }}>Reputation Log</h3>
+            {reputationHistory.length === 0 ? (
+              <p className="text-muted">No reputation changes yet.</p>
+            ) : (
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                {reputationHistory.map((entry) => {
+                  const isPositive = entry.amount >= 0;
+                  return (
+                    <div key={entry._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
+                      <div>
+                        <span style={{
+                          fontWeight: 700,
+                          color: isPositive ? '#22c55e' : '#ef4444',
+                          marginRight: '0.75rem',
+                          display: 'inline-block',
+                          minWidth: '45px'
+                        }}>
+                          {isPositive ? `+${entry.amount}` : entry.amount} SP
+                        </span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                          {entry.reason === 'answer_approved' && 'Answer approved by moderator'}
+                          {entry.reason === 'upvote_received' && 'Upvote received on your post'}
+                          {entry.reason === 'downvote_received' && 'Downvote received on your post'}
+                          {entry.reason === 'best_answer' && 'Your answer marked as Best Answer'}
+                          {entry.reason === 'answer_accepted' && 'Your answer accepted by author'}
+                          {entry.reason === 'upvote_removed' && 'Upvote removed from your post'}
+                          {entry.reason === 'downvote_removed' && 'Downvote removed from your post'}
+                        </span>
+                      </div>
+                      <span className="text-muted text-xs">{ago(entry.createdAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Layout>
