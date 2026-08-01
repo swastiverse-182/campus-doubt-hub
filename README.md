@@ -1,6 +1,24 @@
 # 🎓 Campus Doubt Hub
 
-A community-driven Q&A platform where students ask questions, earn Skill Points (SP), receive badges, and admins moderate content.
+A community-driven Q&A and FAQ platform built for **Vicharanshala — IIT Ropar's online internship program**. Interns can ask questions, submit answers, vote on content, earn Skill Points (SP), unlock badges, report bad answers, and track their reputation — all moderated by admins through a dedicated dashboard.
+
+---
+
+## 📖 About the Project
+
+Campus Doubt Hub is a community-driven question-and-answer platform built specifically for the Vicharanshala online internship program at IIT Ropar, designed to solve one of the most persistent problems in large-scale online programs — the endless repetition of the same doubts across scattered chat groups and emails, where important answers get buried in scroll, mentors waste time responding to the same questions batch after batch, and interns who search at the wrong time or join late simply miss the information entirely.
+
+The platform gives interns a single, organized space to post questions categorized by topic — covering everything from onboarding and compliance to technical tools, timelines, and program logistics — where they can search for answers before asking, immediately finding resolutions to doubts others have already raised. Any intern can answer another intern's question, making the platform truly peer-driven, but every answer goes through admin review before going live, ensuring only accurate, verified information reaches the community.
+
+Interns can vote on helpful answers, bookmark questions, report misleading content, and earn Skill Points as they contribute — creating a reputation system that rewards both good questions and helpful answers. Mentors and coordinators manage everything through a dedicated admin dashboard, approving or rejecting answers, marking the best answer to a question, and acting on reported content — maintaining quality at scale without constant manual monitoring.
+
+Most importantly, the platform builds an institutional memory that grows with every cohort — every question, accepted answer, and resolved doubt is preserved in one searchable, permanent knowledge base that each new batch of interns inherits, so the program gets smarter over time.
+
+---
+
+## 🎥 Live Demo
+
+[Watch the demo video](https://drive.google.com/file/d/147BpzD33AWaS4SINZ50w4u5MqtqzzXId/view?usp=drive_link)
 
 ---
 
@@ -11,19 +29,19 @@ A community-driven Q&A platform where students ask questions, earn Skill Points 
 | Frontend | React + TypeScript + Vite |
 | Routing | React Router v6 |
 | HTTP Client | Axios |
-| State | Context API |
+| State Management | React Context API |
 | Backend | Node.js + Express + TypeScript |
 | Database | MongoDB + Mongoose |
-| Auth | JWT + bcrypt |
+| Authentication | JWT + bcrypt |
 | Validation | Zod |
-| UI | Vanilla CSS (dark theme) |
+| UI Styling | Vanilla CSS (dark theme) |
 
 ---
 
 ## Prerequisites
 
 - Node.js 18+
-- MongoDB running locally (or MongoDB Atlas URI)
+- MongoDB running locally or a MongoDB Atlas URI
 - npm
 
 ---
@@ -32,8 +50,25 @@ A community-driven Q&A platform where students ask questions, earn Skill Points 
 
 ```
 campus-doubt-hub/
-├── client/          # React + Vite frontend
-└── server/          # Express + TypeScript backend
+├── client/                  # React + Vite frontend
+│   └── src/
+│       ├── components/      # Reusable UI components
+│       ├── context/         # Auth context (React Context API)
+│       ├── pages/           # All page components
+│       ├── routes/          # Protected route wrappers
+│       ├── services/        # Axios API service modules
+│       └── types/           # TypeScript type definitions
+└── server/                  # Express + TypeScript backend
+    └── src/
+        ├── config/          # DB connection
+        ├── controllers/     # Route handlers
+        ├── middleware/       # Auth, role guard, validation
+        ├── models/          # Mongoose schemas (9 models)
+        ├── routes/          # API route definitions (11 modules)
+        ├── scripts/         # Admin seeder script
+        ├── services/        # Business logic layer
+        ├── utils/           # API response helpers
+        └── validators/      # Zod validation schemas
 ```
 
 ---
@@ -62,7 +97,7 @@ cp .env.example .env
 npm run seed
 ```
 
-This creates:
+This creates the default admin account:
 - **Email:** `admin@example.com`
 - **Password:** `admin123`
 
@@ -84,7 +119,7 @@ npm run dev
 
 ---
 
-## Environment Variables (server/.env)
+## Environment Variables (`server/.env`)
 
 ```env
 PORT=5000
@@ -103,89 +138,317 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/campus-doubt-hub
 
 ## Features
 
-### 👤 Users
-- Register / Login with JWT
-- Persistent login via localStorage
-- Role-based access (USER / ADMIN)
+### 🔐 Authentication & Access Control
+- Register and login with email/password
+- Passwords hashed with bcrypt
+- JWT stored in localStorage for persistent sessions
+- Role-based access: `USER` and `ADMIN`
+- Middleware-protected routes on both frontend and backend
+
+---
 
 ### ❓ Questions
-- Ask questions with tags
-- Browse, search, filter by tag or answered status
-- Paginated question feed
-- View count tracking
+- Post questions with a title, description, and one or more tags
+- Tags are mapped to Vicharanshala's own tools and systems:
+
+| Tag | Area |
+|-----|------|
+| Onboarding & VINS | Platform onboarding |
+| Timelines & Clashes | Schedule management |
+| NOC Compliance | No-objection certificates |
+| Dashboard & Offers | Intern dashboard |
+| Certification & Credits | Certificates and credits |
+| ViBe LMS Tech | Learning management system |
+| Yaksha AI Engine | AI assessment engine |
+| Communication Tech | Communication tools |
+| Rosetta Journaling | Journaling platform |
+| Team & Code Engineering | Technical work |
+
+- Real-time **view count** tracking — increments every time a question is opened
+- **Answer count** tracking — updates automatically
+- Question authors can **accept** an approved answer as the final resolution
+- Question authors and admins can **delete** questions
+
+---
+
+### 🔍 Smart Search & Filtering
+
+- **Debounced search** — waits 400ms after typing before querying (prevents API spam)
+- **Live autocomplete suggestions** — separate API call as you type
+- **Hybrid search** — combines MongoDB full-text index with tag filters in a single query
+- **Sort options:**
+  - 🕒 Recent — newest first
+  - 🔥 Trending — sorted by trending score (see algorithm below)
+  - 👍 Most Upvoted — highest upvote count first
+  - 💬 Most Answered — most answers first
+- **Status filter:** All / ✅ Answered / ❓ Unanswered
+- **Tag filter** — click any tag chip to filter by that category
+- **Paginated** — 10 questions per page
+
+---
+
+### 🔥 Trending Score Algorithm
+
+Every time a question is viewed, its trending score is recalculated:
+
+```
+Trending Score = (upvotes × 3) + (answersCount × 2) + (viewsCount × 0.5) + recencyBoost
+
+recencyBoost = max(0, 50 - hours since posted)
+```
+
+Questions with more community engagement and recent activity rank higher in the Trending sort.
+
+---
 
 ### 💬 Answers
-- Submit answers (pending admin approval)
-- Edit / delete own pending answers
-- Best answer highlighting (⭐)
+- Submit answers to any question
+- Answers start in **PENDING** state and require admin approval before going live
+- Authors can **edit** or **delete** their own pending answers
+- Approved answers can be **upvoted/downvoted** by the community
+- Admin can mark one answer as **⭐ Best Answer**
+- Question author can mark one answer as **✅ Accepted**
+- Both best and accepted statuses are visually highlighted
 
-### ⚡ SP Reward System
-| Badge | Points |
-|-------|--------|
-| 🌱 Beginner | 0–50 SP |
-| 💡 Helper | 51–200 SP |
-| 🔥 Expert | 201–500 SP |
+---
+
+### 👍 Upvote / Downvote Voting System
+- Vote on both **questions** and **answers**
+- Click the same vote again to **remove** your vote (toggle)
+- Click the opposite vote to **change** your vote (revote)
+- One vote per user per item — enforced at database level with a unique index
+- Votes directly affect the author's **SP reputation score**
+- Vote state is loaded and displayed correctly per user on every page load
+
+---
+
+### ⚡ SP Points & Badge System
+
+Users earn and lose Skill Points (SP) based on community interactions:
+
+| Event | SP Change |
+|-------|-----------|
+| Answer approved by admin | +10 SP |
+| Upvote received on a post | +SP |
+| Downvote received on a post | −SP |
+| Answer marked as Best Answer | +SP |
+| Answer accepted by question author | +SP |
+
+**Badge Tiers:**
+
+| Badge | SP Range |
+|-------|----------|
+| 🌱 Beginner | 0 – 50 SP |
+| 💡 Helper | 51 – 200 SP |
+| 🔥 Expert | 201 – 500 SP |
 | ⭐ Mentor | 500+ SP |
 
-- +10 SP awarded when answer is approved
-- One-time reward per answer
+- Badges are displayed on answers, profiles, and the leaderboard
+- SP reward for answer approval is **one-time per answer** to prevent abuse
+- All SP changes are logged permanently in the **Reputation Log**
 
-### 🔔 Notifications
-- Auto-generated on approve/reject/best-answer
-- Unread badge on bell icon
-- Mark read / mark all read
+---
+
+### 🚩 Answer Reporting System
+- Any logged-in user can report an answer they find problematic
+- Structured report reasons:
+  - Spam
+  - Irrelevant
+  - Incorrect Information
+  - Offensive Content
+  - Duplicate Answer
+  - Other
+- Optional comment field for additional context
+- One report per user per answer — enforced at database level
+- Report lifecycle: `PENDING` → `REVIEWED` or `DISMISSED`
+- Admins can **review** a report (and optionally reject the answer simultaneously)
+- Admins can **dismiss** a report (and optionally clear the flag on the answer)
+- Admins can **delete** the flagged answer directly from the report view
+- Answers accumulate a `reportCount` and `isFlagged` status for admin visibility
+
+---
+
+### 🔔 Notification System
+- Notifications are **auto-generated** for the following events:
+  - Answer approved by admin
+  - Answer rejected by admin
+  - Answer marked as Best Answer
+  - Answer accepted by question author
+- Unread notification count shown as a **badge on the bell icon** in the navbar
+- Dedicated notifications page with full list
+- Mark individual notifications as read
+- Mark all notifications as read at once
+
+---
 
 ### 🔖 Bookmarks
-- Save / remove questions
+- Save any question to your personal bookmarks
+- Remove a bookmark at any time
+- Dedicated **Bookmarks page** showing all saved questions
+
+---
 
 ### 🏆 Leaderboard
-- Ranked by SP points
-- Gold/Silver/Bronze medals for top 3
+- All users ranked by SP points (descending)
+- 🥇 🥈 🥉 medal indicators for top 3 users
+- Shows name, badge, and SP score for each user
+
+---
+
+### 📅 Activity Feed
+- **Global Feed** — live timeline of all platform activity (questions asked, answers submitted, answers accepted)
+- **My Activity** tab — personal timeline for logged-in users
+- Each activity item shows the user, action, question title (linked), and timestamp
+- Paginated
+
+---
+
+### 👤 User Profile
+- Profile hero with name, email, and current badge + SP points
+- **Badge Progression Bar** — visual percentage progress to the next badge level
+- **Stats Grid:**
+  - Questions Asked
+  - Answers Submitted
+  - Approved Answers
+  - Best Answers
+- **Tabbed Activity View:**
+  - My Questions — all questions posted by the user
+  - My Answers — all answers with status badge and best answer indicator
+  - Reputation — full SP history + top contributions
+
+---
+
+### 📈 Reputation Log & Top Contributions
+- Every SP change is recorded with:
+  - Amount (positive or negative)
+  - Human-readable reason (e.g., "Answer approved by moderator", "Upvote received on your post")
+  - Timestamp
+- **Top Contributions** section shows the user's highest-voted approved answers with:
+  - Vote score (upvotes − downvotes)
+  - Best Answer and Accepted flags
+
+---
 
 ### 🛡️ Admin Panel
-- View all answers with filters (All / Pending / Approved / Rejected)
-- Approve answers (+10 SP)
-- Reject answers
-- Mark best answer
-- Analytics dashboard (user/question/answer counts)
+
+#### Answer Moderation
+- View all submitted answers filtered by status: All / Pending / Approved / Rejected
+- **Approve** an answer → answer goes live, author earns +10 SP, notification sent
+- **Reject** an answer → answer hidden from feed, author notified
+- **Mark Best Answer** → highlights the best answer on the question, author earns SP, notification sent
+
+#### Report Management
+- View all user-submitted reports filtered by status: All / Pending / Reviewed / Dismissed
+- Review a report (with option to reject the associated answer)
+- Dismiss a report (with option to clear the flag on the answer)
+- Delete a flagged answer directly
+
+#### Analytics Dashboard
+- Total registered users
+- Total questions posted
+- Total answers submitted
+
+---
+
+## Data Models
+
+| Model | Purpose |
+|-------|---------|
+| `User` | User accounts, roles, SP points |
+| `Question` | Questions with tags, view count, trending score |
+| `Answer` | Answers with approval status, best answer flag |
+| `Vote` | Per-user votes on questions and answers |
+| `Bookmark` | Saved questions per user |
+| `Notification` | System notifications per user |
+| `Report` | User reports on answers |
+| `Activity` | Platform-wide activity log for feeds |
+| `ReputationLog` | Full history of SP changes per user |
 
 ---
 
 ## API Endpoints
 
+### Auth
 ```
 POST   /api/auth/register
 POST   /api/auth/login
 GET    /api/auth/me
+```
 
-GET    /api/questions          (search, tag, answered, page, limit)
+### Questions
+```
+GET    /api/questions          ?search= &tag= &answered= &sort= &page= &limit=
 GET    /api/questions/:id
 POST   /api/questions
 PUT    /api/questions/:id
 DELETE /api/questions/:id
+PATCH  /api/questions/:id/accept-answer
+```
 
+### Answers
+```
 GET    /api/answers/question/:questionId
 POST   /api/answers
 PUT    /api/answers/:id
 DELETE /api/answers/:id
+```
 
+### Voting
+```
+POST   /api/votes              { targetId, targetType, value }
+DELETE /api/votes/:targetId
+GET    /api/votes/user         ?targetIds=id1,id2,...
+```
+
+### Search
+```
+GET    /api/search             ?q= &tags=
+GET    /api/search/suggestions ?q=
+```
+
+### Bookmarks
+```
 GET    /api/bookmarks
 POST   /api/bookmarks
 DELETE /api/bookmarks/:id
+```
 
+### Notifications
+```
 GET    /api/notifications
 PATCH  /api/notifications/:id/read
 PATCH  /api/notifications/read-all
+```
 
+### Users
+```
 GET    /api/users/profile
 GET    /api/users/leaderboard
 GET    /api/users/activity
+```
 
-GET    /api/admin/answers
+### Activity Feed
+```
+GET    /api/feed/global        ?page= &limit=
+GET    /api/feed/user          ?page= &limit=
+```
+
+### Reports (User)
+```
+POST   /api/reports
+```
+
+### Admin
+```
+GET    /api/admin/answers               ?status=
 PATCH  /api/admin/answers/:id/approve
 PATCH  /api/admin/answers/:id/reject
 PATCH  /api/admin/answers/:id/best-answer
 GET    /api/admin/analytics
+GET    /api/admin/reports               ?status=
+PATCH  /api/admin/reports/:id/review
+PATCH  /api/admin/reports/:id/dismiss
+DELETE /api/admin/reports/:id
 ```
 
 ---
@@ -206,10 +469,11 @@ cd client && npm run build
 
 ## Deployment Notes
 
-- Set `NODE_ENV=production` in server `.env`
+- Set `NODE_ENV=production` in `server/.env`
 - Change `JWT_SECRET` to a strong random string
-- Use MongoDB Atlas for hosted database
+- Use MongoDB Atlas for the hosted database
 - Configure CORS origin in `server/src/app.ts` to match your frontend URL
+- Run `npm run seed` once on the production server to create the admin account
 
 ---
 
