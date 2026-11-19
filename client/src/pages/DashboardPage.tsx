@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import Layout from '../components/Layout';
 import QuestionCard from '../components/QuestionCard';
 import TagChip from '../components/TagChip';
@@ -95,12 +95,41 @@ const DashboardPage: React.FC = () => {
           <Search size={17} color="var(--text-muted)" />
           <input
             id="question-search"
-            placeholder="Search questions…"
+            placeholder="Search questions (type 2+ letters or keywords)…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setDebouncedSearch(search);
+                setShowSuggestions(false);
+              }
+            }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('');
+                setDebouncedSearch('');
+                setSuggestions([]);
+                setShowSuggestions(false);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '0 4px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         {showSuggestions && suggestions.length > 0 && (
           <div className="search-suggestions">
@@ -110,6 +139,7 @@ const DashboardPage: React.FC = () => {
                 className="search-suggestion-item"
                 onClick={() => {
                   setSearch(sug);
+                  setDebouncedSearch(sug);
                   setShowSuggestions(false);
                 }}
               >

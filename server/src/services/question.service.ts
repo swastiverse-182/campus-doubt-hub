@@ -1,9 +1,13 @@
 import { Question, IQuestion } from '../models/Question';
 import { Answer } from '../models/Answer';
+import { Bookmark } from '../models/Bookmark';
+import { Vote } from '../models/Vote';
+import { Activity } from '../models/Activity';
 import { CreateQuestionInput, UpdateQuestionInput } from '../validators/question.validator';
 import { createNotification } from './notification.service';
 import { updateTrendingScore } from './trending.service';
 import { logActivity } from './feed.service';
+import { buildQuestionSearchFilter } from '../utils/searchHelper';
 import mongoose from 'mongoose';
 
 
@@ -23,8 +27,9 @@ export const getQuestions = async (query: QuestionQuery) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const filter: Record<string, any> = {};
 
-  if (search) {
-    filter.$text = { $search: search };
+  if (search && search.trim()) {
+    const searchFilter = buildQuestionSearchFilter(search);
+    Object.assign(filter, searchFilter);
   }
   if (tag) {
     filter.tags = tag;
@@ -118,7 +123,14 @@ export const deleteQuestion = async (id: string, userId: string, role: string) =
   if (String(question.author) !== userId && role !== 'ADMIN') {
     throw new Error('Not authorized');
   }
-  await Question.findByIdAndDelete(id);
+
+  await Promise.all([
+    Question.findByIdAndDelete(id),
+    Answer.deleteMany({ questionId: id }),
+    Bookmark.deleteMany({ questionId: id }),
+    Vote.deleteMany({ targetId: id }),
+    Activity.deleteMany({ targetId: id }),
+  ]);
 };
 
 export const getUserQuestions = async (userId: string) => {

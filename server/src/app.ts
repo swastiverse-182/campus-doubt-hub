@@ -13,13 +13,26 @@ import voteRoutes from './routes/vote.routes';
 import searchRoutes from './routes/search.routes';
 import feedRoutes from './routes/feed.routes';
 import { reportUserRoutes, reportAdminRoutes } from './routes/report.routes';
+import { env } from './config/env';
 
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 const app = express();
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

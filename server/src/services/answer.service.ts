@@ -1,5 +1,6 @@
 import { Answer } from '../models/Answer';
 import { Question } from '../models/Question';
+import { Vote } from '../models/Vote';
 import { createNotification } from './notification.service';
 import { awardSP, SP_RULES } from './sp.service';
 import { updateTrendingScore } from './trending.service';
@@ -50,13 +51,22 @@ export const updateAnswer = async (
   return answer.populate('authorId', 'name email spPoints');
 };
 
-export const deleteAnswer = async (id: string, userId: string) => {
+export const deleteAnswer = async (id: string, userId: string, role?: string) => {
   const answer = await Answer.findById(id);
   if (!answer) throw new Error('Answer not found');
-  if (String(answer.authorId) !== userId) throw new Error('Not authorized');
-  if (answer.status !== 'PENDING') throw new Error('Only pending answers can be deleted');
+
+  const isOwner = String(answer.authorId) === userId;
+  const isAdmin = role === 'ADMIN';
+
+  if (!isOwner && !isAdmin) {
+    throw new Error('Not authorized');
+  }
+  if (!isAdmin && answer.status !== 'PENDING') {
+    throw new Error('Only pending answers can be deleted');
+  }
 
   await Answer.findByIdAndDelete(id);
+  await Vote.deleteMany({ targetId: id });
   await Question.findByIdAndUpdate(answer.questionId, { $inc: { answersCount: -1 } });
   await updateTrendingScore(answer.questionId.toString());
 };
@@ -91,6 +101,16 @@ export const approveAnswer = async (answerId: string) => {
     await createNotification(answer.authorId, '✅ Your answer was approved!');
     await answer.save();
   }
+
+  // Notify question author about the approved answer
+  const question = await Question.findById(answer.questionId);
+  if (question && question.author.toString() !== answer.authorId.toString()) {
+    await createNotification(
+      question.author,
+      `💬 A new answer has been approved for your question: "${question.title.substring(0, 50)}..."`
+    );
+  }
+
   return answer.populate('authorId', 'name email spPoints');
 };
 

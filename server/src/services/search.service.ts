@@ -1,24 +1,28 @@
 import { Question, IQuestion } from '../models/Question';
+import { buildSuggestionSearchFilter, buildQuestionSearchFilter } from '../utils/searchHelper';
 
 /**
- * Returns top 5 question title matches for autocomplete suggestions.
+ * Returns top question title matches for autocomplete suggestions.
+ * Supports prefix, substring, two-letter inputs, and multiple keywords.
  */
 export const searchSuggestions = async (query: string): Promise<string[]> => {
   if (!query || typeof query !== 'string') return [];
-  
-  // Clean query and search by prefix/substring matching on title
-  const questions = await Question.find({
-    title: { $regex: query.trim(), $options: 'i' }
-  })
-    .limit(5)
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const filter = buildSuggestionSearchFilter(trimmed);
+  const questions = await Question.find(filter)
+    .limit(8)
     .select('title');
 
-  return questions.map(q => q.title);
+  // Return unique titles
+  const titles = Array.from(new Set(questions.map((q) => q.title)));
+  return titles;
 };
 
 /**
- * Performs a hybrid search combining full-text search with tag filtering,
- * sorted by relevance textScore.
+ * Performs search combining keyword/substring search with tag filtering.
+ * Supports 2-letter tokens, partial words, multi-keyword queries, and full questions.
  */
 export const hybridSearch = async (query?: string, tags?: string[]): Promise<IQuestion[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,16 +33,10 @@ export const hybridSearch = async (query?: string, tags?: string[]): Promise<IQu
   }
 
   if (query && query.trim()) {
-    filter.$text = { $search: query.trim() };
-    return Question.find(
-      filter,
-      { score: { $meta: 'textScore' } }
-    )
-      .sort({ score: { $meta: 'textScore' } })
-      .populate('author', 'name email spPoints');
+    const searchFilter = buildQuestionSearchFilter(query);
+    Object.assign(filter, searchFilter);
   }
 
-  // If no search query, fallback to sorting by creation date
   return Question.find(filter)
     .sort({ createdAt: -1 })
     .populate('author', 'name email spPoints');

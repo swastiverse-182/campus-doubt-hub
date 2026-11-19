@@ -5,9 +5,13 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "server": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node src/scripts/seed.ts"
+    "seed": "ts-node src/scripts/seed.ts",
+    "test:search": "ts-node src/scripts/testSearch.ts",
+    "test:db": "ts-node src/scripts/testDb.ts",
+    "test:notifications": "ts-node src/scripts/testNotifications.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

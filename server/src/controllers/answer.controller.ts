@@ -26,7 +26,7 @@ export const updateAnswer = async (req: Request, res: Response): Promise<void> =
 
 export const deleteAnswer = async (req: Request, res: Response): Promise<void> => {
   try {
-    await answerService.deleteAnswer(req.params.id, String(req.user!._id));
+    await answerService.deleteAnswer(req.params.id, String(req.user!._id), req.user!.role);
     sendSuccess(res, null, 'Answer deleted');
   } catch (err) {
     sendError(res, (err as Error).message, 400);

@@ -42,8 +42,9 @@ const AnswerCard: React.FC<AnswerCardProps> = ({
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  const isOwner = user && String(user._id) === String(answer.authorId._id);
+  const isOwner = user && String(user._id) === String(answer.authorId?._id);
   const canEdit = isOwner && answer.status === 'PENDING';
+  const canDelete = canEdit || user?.role === 'ADMIN';
 
   const handleSave = async () => {
     setSaving(true);
@@ -171,18 +172,18 @@ const AnswerCard: React.FC<AnswerCardProps> = ({
         <div className="answer-content">{answer.content}</div>
       )}
 
-      {((canEdit && !editing) || (user && String(user._id) === questionAuthorId && answer.status === 'APPROVED' && !answer.isAccepted)) && (
+      {(((canEdit || canDelete) && !editing) || (user && String(user._id) === questionAuthorId && answer.status === 'APPROVED' && !answer.isAccepted)) && (
         <div className="answer-footer" style={{ marginTop: '0.75rem' }}>
           <div className="flex gap-2">
             {canEdit && !editing && (
-              <>
-                <button className="btn btn-secondary btn-sm" onClick={() => setEditing(true)} id={`edit-btn-${answer._id}`}>
-                  <Edit2 size={13} /> Edit
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={handleDelete} id={`delete-btn-${answer._id}`}>
-                  <Trash2 size={13} /> Delete
-                </button>
-              </>
+              <button className="btn btn-secondary btn-sm" onClick={() => setEditing(true)} id={`edit-btn-${answer._id}`}>
+                <Edit2 size={13} /> Edit
+              </button>
+            )}
+            {canDelete && !editing && (
+              <button className="btn btn-danger btn-sm" onClick={handleDelete} id={`delete-btn-${answer._id}`}>
+                <Trash2 size={13} /> Delete
+              </button>
             )}
             {user && String(user._id) === questionAuthorId && answer.status === 'APPROVED' && !answer.isAccepted && (
               <button
